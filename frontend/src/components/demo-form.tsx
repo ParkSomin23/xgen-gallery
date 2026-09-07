@@ -33,6 +33,7 @@ const COPY = {
             "PoC · 기술 상담",
             "도입 · 견적 문의",
             "뉴스레터 구독하기",
+            "현장 리포트 구독하기",
             "기타",
         ],
         inquiry: "상담 내용",
@@ -82,6 +83,11 @@ const COPY = {
             ],
             [
                 "접수하신 내용을 담당자가 검토합니다",
+                "현장 리포트 구독 정보를 등록합니다",
+                "새 현장 리포트가 발행되면 입력하신 이메일로 알려드립니다",
+            ],
+            [
+                "접수하신 내용을 담당자가 검토합니다",
                 "영업일 1–2일 내 이메일 또는 전화로 연락드립니다",
                 "문의 내용에 맞는 담당자가 상세히 안내드립니다",
             ],
@@ -118,6 +124,7 @@ const COPY = {
             "PoC / Tech consultation",
             "Pricing / Rollout inquiry",
             "Newsletter subscription",
+            "Field report subscription",
             "Other",
         ],
         inquiry: "Consultation details",
@@ -165,6 +172,11 @@ const COPY = {
                 "We review your subscription request",
                 "We register your newsletter subscription details",
                 "Future issues will be sent to the email address you provided",
+            ],
+            [
+                "We review your subscription request",
+                "We register your field report subscription details",
+                "We email you when a new field report is published",
             ],
             [
                 "A researcher reviews your request",
@@ -231,6 +243,7 @@ const TYPE_PARAM_TO_INDEX: Record<string, number> = {
     poc: 2,
     pricing: 3,
     newsletter: 4,
+    fieldReport: 5,
 };
 
 const REQUIRED_CONSENTS = [
@@ -238,7 +251,13 @@ const REQUIRED_CONSENTS = [
     "agreePrivacyCollect",
 ] as const;
 
-export function DemoForm({ initialType }: { initialType?: keyof typeof TYPE_PARAM_TO_INDEX }) {
+export function DemoForm({
+    initialType,
+    onSuccess,
+}: {
+    initialType?: keyof typeof TYPE_PARAM_TO_INDEX;
+    onSuccess?: (email: string) => void;
+}) {
     const { locale } = useI18n();
     const c = COPY[locale === "en" ? "en" : "ko"];
 
@@ -351,6 +370,7 @@ export function DemoForm({ initialType }: { initialType?: keyof typeof TYPE_PARA
             });
             if (!res.ok) throw new Error(String(res.status));
             setStatus("done");
+            onSuccess?.(fields.email.trim());
         } catch {
             setStatus("idle");
             setSubmitError(c.errSubmit);
