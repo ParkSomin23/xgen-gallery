@@ -96,6 +96,29 @@ export async function POST(req: Request) {
                     console.error("[demo-request] webhook forward failed:", e),
                 ),
             );
+            // 현장 리포트 신청은 상담 리드 상세를 leads 탭에 남기는 동시에
+            // subscribers 탭에도 종류를 구분해 기록한다. 그래야 다른 기기에서도
+            // 이메일 확인만으로 이미 신청한 독자의 본문 게이트를 열 수 있다.
+            if (body.inquiryType === "현장 리포트 구독하기" ||
+                body.inquiryType === "Field report subscription") {
+                jobs.push(
+                    fetch(webhook, {
+                        method: "POST",
+                        headers: { "content-type": "application/json; charset=utf-8" },
+                        body: JSON.stringify({
+                            kind: "field-report",
+                            email: body.email,
+                            company: body.company,
+                            name: body.name,
+                            jobTitle: body.jobTitle,
+                            subscribed: "Y",
+                            receivedAt: record.receivedAt,
+                        }),
+                    }).catch((e) =>
+                        console.error("[demo-request] field report subscription failed:", e),
+                    ),
+                );
+            }
         } else {
             console.log("[demo-request] received:", JSON.stringify(record));
         }
