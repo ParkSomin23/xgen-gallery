@@ -22,6 +22,8 @@ interface DemoRequest {
     agreePrivacyPolicy?: boolean;
     agreePrivacyCollect?: boolean;
     agreeMarketing?: boolean;
+    /** 운영 점검용 제출. 실제 신청자·담당자 대신 지정된 QA 수신자에게만 알린다. */
+    testMode?: boolean;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -122,8 +124,20 @@ export async function POST(req: Request) {
         } else {
             console.log("[demo-request] received:", JSON.stringify(record));
         }
-        jobs.push(sendMail(contactConfirmMail(record))); // 신청자 접수확인
-        jobs.push(sendMail(contactInternalMail(record))); // 내부 팀 알림
+        if (body.testMode === true) {
+            // 운영 점검이 실제 신청자나 상담 담당자에게 도달하지 않게 한 통으로 격리한다.
+            const testMail = contactInternalMail(record);
+            jobs.push(
+                sendMail({
+                    ...testMail,
+                    to: "swan@plateer.com",
+                    subject: `[TEST] ${testMail.subject}`,
+                }),
+            );
+        } else {
+            jobs.push(sendMail(contactConfirmMail(record))); // 신청자 접수확인
+            jobs.push(sendMail(contactInternalMail(record))); // 내부 팀 알림
+        }
         await Promise.allSettled(jobs);
     });
 
