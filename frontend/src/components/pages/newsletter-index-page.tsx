@@ -14,7 +14,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SceneBackground } from "@/components/scene-background";
 import { JsonLd } from "@/components/json-ld";
 import { breadcrumbLd } from "@/lib/structured-data";
-import { NewsletterSignup } from "@/components/newsletter-signup";
+import { DemoForm } from "@/components/demo-form";
 import { getIssuesFor } from "@/lib/newsletter";
 
 /** 아이콘만 여기 둔다 — 문구는 로케일별 COPY.benefits 에서 인덱스로 맞춘다. */
@@ -192,7 +192,7 @@ export function NewsletterIndexPageContent({ locale }: { locale: Locale }) {
                         {t.unsubNote}
                     </p>
                     <div className="mt-5">
-                        <NewsletterSignup />
+                        <DemoForm initialType="newsletter" />
                     </div>
                 </div>
             </main>

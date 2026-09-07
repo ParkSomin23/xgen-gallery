@@ -32,11 +32,13 @@ const COPY = {
             "XGEN 15일 무료 체험 신청",
             "PoC · 기술 상담",
             "도입 · 견적 문의",
+            "뉴스레터 구독하기",
+            "현장 리포트 구독하기",
             "기타",
         ],
-        inquiry: "상담 내용",
+        inquiry: "문의 사항",
         inquiryPlaceholder:
-            "제품 데모·15일 무료 체험·PoC·기술 상담 중 필요한 내용과 검토 배경을 간단히 남겨주세요. 문의 유형을 선택해 접수하시면 영업일 1~2일 내 연락드립니다.",
+            "문의하실 사항과 검토 배경을 간단히 남겨주세요. 문의 유형을 선택해 접수하시면 담당자가 확인 후 안내드립니다.",
         agreeAll: "전체 동의",
         agreePolicy: "[필수] 개인정보취급방침에 동의",
         agreeCollect: "[필수] 개인정보 수집 및 이용 동의",
@@ -76,6 +78,16 @@ const COPY = {
             ],
             [
                 "접수하신 내용을 담당자가 검토합니다",
+                "뉴스레터 구독 정보를 등록합니다",
+                "다음 호부터 입력하신 이메일로 보내드립니다",
+            ],
+            [
+                "접수하신 내용을 담당자가 검토합니다",
+                "현장 리포트 구독 정보를 등록합니다",
+                "새 현장 리포트가 발행되면 입력하신 이메일로 알려드립니다",
+            ],
+            [
+                "접수하신 내용을 담당자가 검토합니다",
                 "영업일 1–2일 내 이메일 또는 전화로 연락드립니다",
                 "문의 내용에 맞는 담당자가 상세히 안내드립니다",
             ],
@@ -111,11 +123,13 @@ const COPY = {
             "XGEN 15-day free trial",
             "PoC / Tech consultation",
             "Pricing / Rollout inquiry",
+            "Newsletter subscription",
+            "Field report subscription",
             "Other",
         ],
-        inquiry: "Consultation details",
+        inquiry: "Inquiry details",
         inquiryPlaceholder:
-            "Briefly tell us what you need — product demo, 15-day free trial, PoC, or tech consultation — and your context. Select an inquiry type and we'll reply within 1–2 business days.",
+            "Briefly describe your inquiry and relevant context. Select an inquiry type, and our team will review it and follow up.",
         agreeAll: "Agree to all",
         agreePolicy: "[Required] I agree to the Privacy Policy.",
         agreeCollect:
@@ -153,6 +167,16 @@ const COPY = {
                 "A researcher reviews your request",
                 "We reach out by email or phone within 1–2 business days",
                 "We propose a rollout approach and quote that fit your requirements",
+            ],
+            [
+                "We review your subscription request",
+                "We register your newsletter subscription details",
+                "Future issues will be sent to the email address you provided",
+            ],
+            [
+                "We review your subscription request",
+                "We register your field report subscription details",
+                "We email you when a new field report is published",
             ],
             [
                 "A researcher reviews your request",
@@ -212,12 +236,14 @@ const REQUIRED_TEXT = [
     "inquiry",
 ] as const;
 
-/** ?type= 딥링크 → 문의 유형 프리셋(옵션 인덱스). demo·trial·poc·pricing */
+/** ?type= 딥링크 → 문의 유형 프리셋(옵션 인덱스). */
 const TYPE_PARAM_TO_INDEX: Record<string, number> = {
     demo: 0,
     trial: 1,
     poc: 2,
     pricing: 3,
+    newsletter: 4,
+    fieldReport: 5,
 };
 
 const REQUIRED_CONSENTS = [
@@ -225,7 +251,13 @@ const REQUIRED_CONSENTS = [
     "agreePrivacyCollect",
 ] as const;
 
-export function DemoForm() {
+export function DemoForm({
+    initialType,
+    onSuccess,
+}: {
+    initialType?: keyof typeof TYPE_PARAM_TO_INDEX;
+    onSuccess?: (email: string) => void;
+}) {
     const { locale } = useI18n();
     const c = COPY[locale === "en" ? "en" : "ko"];
 
@@ -253,7 +285,9 @@ export function DemoForm() {
     // 진입 소스에 따라 문의 유형 프리셋: ?type= 우선, 없으면 레퍼러로 추론
     //  · ?type=demo|trial|poc|pricing  · 레퍼러가 /xgen-trial → 무료 체험
     useEffect(() => {
-        let idx: number | undefined;
+        let idx: number | undefined = initialType
+            ? TYPE_PARAM_TO_INDEX[initialType]
+            : undefined;
         const t = new URLSearchParams(window.location.search).get("type");
         if (t && t in TYPE_PARAM_TO_INDEX) {
             idx = TYPE_PARAM_TO_INDEX[t];
@@ -276,8 +310,7 @@ export function DemoForm() {
                 inquiryType: c.inquiryTypeOptions[idx as number],
             }));
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [c.inquiryTypeOptions, initialType]);
 
     const validate = (): boolean => {
         const e: Record<string, string> = {};
@@ -337,6 +370,7 @@ export function DemoForm() {
             });
             if (!res.ok) throw new Error(String(res.status));
             setStatus("done");
+            onSuccess?.(fields.email.trim());
         } catch {
             setStatus("idle");
             setSubmitError(c.errSubmit);
@@ -402,7 +436,12 @@ export function DemoForm() {
                         <button
                             type="button"
                             onClick={() => {
-                                setFields(EMPTY);
+                                setFields({
+                                    ...EMPTY,
+                                    inquiryType: initialType
+                                        ? c.inquiryTypeOptions[TYPE_PARAM_TO_INDEX[initialType]]
+                                        : "",
+                                });
                                 setErrors({});
                                 setStatus("idle");
                             }}

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import { useI18n } from "@/components/i18n-provider";
+import { DemoForm } from "@/components/demo-form";
 
 /**
  * 구독 게이트 — 도입부는 열어두고 본론부터 가린다.
@@ -11,8 +12,8 @@ import { useI18n } from "@/components/i18n-provider";
  * AI 크롤러는 지금처럼 전문을 읽는다(검색 노출 손실 없음). 대신 개발자도구로는
  * 우회되므로, 이 장치의 목적은 콘텐츠 차단이 아니라 리드 수집이다.
  *
- * 여기서 받는 것은 약식 리드 정보(회사·담당자)를 겸한 구독이다. 시트에는
- * kind="field-report" 로 쌓여 뉴스레터·새 글 알림과 유입 경로가 구분된다.
+ * 공용 상담 폼으로 리드 상세를 받고, API가 시트의 leads 탭과
+ * kind="field-report" 구독 정보를 함께 남겨 유입 경로를 구분한다.
  * 이미 구독 중인 독자는 이메일만 확인해 그대로 열어준다(/api/newsletter/check).
  *
  * 한 번 정보를 남긴 사람은 현장 리포트 **전체**를 계속 읽는다. 해제는 글 단위가
@@ -74,15 +75,6 @@ export function GatedBody({ teaser, rest }: { teaser: string; rest: string }) {
     const { locale } = useI18n();
     const t = COPY[locale === "en" ? "en" : "ko"];
     const [unlocked, setUnlocked] = useState(false);
-    const [form, setForm] = useState({
-        name: "",
-        company: "",
-        jobTitle: "",
-        email: "",
-    });
-    const [agree, setAgree] = useState(false);
-    // 뉴스레터는 별개 구독이다 — 원하는 사람만 함께 신청한다.
-    const [alsoNews, setAlsoNews] = useState(false);
     const [status, setStatus] = useState<"idle" | "sending" | "error">("idle");
     // 이미 구독한 독자용 — 이메일만 받아 구독자 시트에서 확인한다.
     const [mode, setMode] = useState<"subscribe" | "check">("subscribe");
@@ -127,11 +119,6 @@ export function GatedBody({ teaser, rest }: { teaser: string; rest: string }) {
         setStatus("idle");
         setCheckFailed(true);
     }
-
-    const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
-        setForm((f) => ({ ...f, [k]: e.target.value }));
-        if (status === "error") setStatus("idle");
-    };
 
     // 서버 렌더는 항상 잠긴 상태로 두고, 마운트 후 쿠키를 보고 연다
     // (초기 상태를 쿠키로 잡으면 하이드레이션이 어긋난다).
@@ -178,41 +165,6 @@ export function GatedBody({ teaser, rest }: { teaser: string; rest: string }) {
             delete document.body.dataset.blogGate;
         };
     }, []);
-
-    async function submit(e: React.FormEvent) {
-        e.preventDefault();
-        const v = {
-            name: form.name.trim(),
-            company: form.company.trim(),
-            jobTitle: form.jobTitle.trim(),
-            email: form.email.trim(),
-        };
-        if (!EMAIL_RE.test(v.email) || !v.name || !v.company || !v.jobTitle || !agree) {
-            setStatus("error");
-            return;
-        }
-        setStatus("sending");
-        try {
-            await fetch("/api/newsletter", {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({ ...v, kind: "field-report" }),
-            });
-            // 뉴스레터는 종류가 달라 시트에서도 다른 행으로 관리된다.
-            // 한쪽만 해지해도 다른 쪽이 유지되도록 요청을 나눠 보낸다.
-            if (alsoNews) {
-                await fetch("/api/newsletter", {
-                    method: "POST",
-                    headers: { "content-type": "application/json" },
-                    body: JSON.stringify({ email: v.email, kind: "newsletter" }),
-                });
-            }
-        } catch {
-            // 전송이 실패해도 열어준다 — 웹훅이 비동기라 성공 여부가 즉시 확정되지
-            // 않는데, 여기서 막으면 독자만 손해다.
-        }
-        unlock(v.email);
-    }
 
     return (
         <>
@@ -281,71 +233,8 @@ export function GatedBody({ teaser, rest }: { teaser: string; rest: string }) {
                                     </button>
                                 </form>
                             ) : (
-                            <form onSubmit={submit} className="mt-5">
-                                <div className="grid gap-2.5 sm:grid-cols-2">
-                                    {/* 회사 → 담당자 순. 2열이라 위 줄에 회사 정보,
-                                        아래 줄에 담당자 정보가 놓인다. */}
-                                    {(
-                                        [
-                                            ["company", t.company, "text"],
-                                            ["email", t.email, "email"],
-                                            ["name", t.name, "text"],
-                                            ["jobTitle", t.jobTitle, "text"],
-                                        ] as const
-                                    ).map(([key, label, type]) => (
-                                        <input
-                                            key={key}
-                                            type={type}
-                                            required
-                                            value={form[key]}
-                                            onChange={set(key)}
-                                            placeholder={label}
-                                            aria-label={label}
-                                            disabled={status === "sending"}
-                                            className="w-full rounded-xl border border-[var(--color-line)] bg-white px-4 py-3 text-[15px] outline-none transition focus:border-[#8b5cf6] focus:ring-2 focus:ring-[#8b5cf6]/20 disabled:opacity-60"
-                                        />
-                                    ))}
-                                </div>
-                                <label className="mt-3 flex cursor-pointer items-center gap-2 text-[13.5px] text-[var(--color-ink-muted)]">
-                                    <input
-                                        type="checkbox"
-                                        checked={agree}
-                                        onChange={(e) => {
-                                            setAgree(e.target.checked);
-                                            if (status === "error") setStatus("idle");
-                                        }}
-                                        className="h-4 w-4 rounded border-[var(--color-line-strong)] accent-[#8b5cf6]"
-                                    />
-                                    <span>{t.agree}</span>
-                                </label>
-                                <label className="mt-2 flex cursor-pointer items-center gap-2 text-[13.5px] text-[var(--color-ink-muted)]">
-                                    <input
-                                        type="checkbox"
-                                        checked={alsoNews}
-                                        onChange={(e) => setAlsoNews(e.target.checked)}
-                                        className="h-4 w-4 rounded border-[var(--color-line-strong)] accent-[#8b5cf6]"
-                                    />
-                                    <span>{t.alsoNews}</span>
-                                </label>
-                                {status === "error" && (
-                                    <p className="mt-2 text-[13px] font-semibold text-[#dc2626]">
-                                        {t.error}
-                                    </p>
-                                )}
-                                <button
-                                    type="submit"
-                                    disabled={status === "sending"}
-                                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#6d28d9] px-5 py-3 text-[15px] font-bold text-white transition hover:bg-[#5b21b6] disabled:opacity-60"
-                                >
-                                    {status === "sending" ? (
-                                        t.submitting
-                                    ) : (
-                                        <>
-                                            <Check className="h-4 w-4" />
-                                            {t.submit}
-                                        </>
-                                    )}
-                                </button>
+                            <div className="mt-5">
+                                <DemoForm initialType="fieldReport" onSuccess={unlock} />
                                 <button
                                     type="button"
                                     onClick={() => setMode("check")}
@@ -353,7 +242,7 @@ export function GatedBody({ teaser, rest }: { teaser: string; rest: string }) {
                                 >
                                     {t.already}
                                 </button>
-                            </form>
+                            </div>
                             )}
                         </div>
                     </div>

@@ -26,12 +26,12 @@ const COPY: Record<
     }
 > = {
     ko: {
-        eyebrow: "Plateer AI Labs · 데모 · 무료 체험 · 기술 상담",
-        title: "데모 · 체험 · 기술 상담",
+        eyebrow: "Plateer AI Labs · 데모 · 무료 체험 · 기술 상담 · 뉴스레터",
+        title: "데모 · 체험 · 기술 상담 · 뉴스레터",
         lead: (
             <>
-                제품 데모, XGEN 15일 무료 체험, PoC 및 기술 상담을 신청할 수
-                있습니다. 문의 유형을 선택해 접수해 주시면 담당자가{" "}
+                제품 데모, XGEN 15일 무료 체험, PoC 및 기술 상담, 뉴스레터 구독을
+                신청할 수 있습니다. 문의 유형을 선택해 접수해 주시면 담당자가{" "}
                 <br className="hidden md:inline" />
                 영업일 기준 1~2일 이내에 연락드립니다.
             </>
@@ -62,13 +62,13 @@ const COPY: Record<
         trialCta: "체험 안내 자세히 보기",
     },
     en: {
-        eyebrow: "Plateer AI Labs · Demo · Free trial · Technical consultation",
-        title: "Demo, trial, and technical consultation",
+        eyebrow: "Plateer AI Labs · Demo · Free trial · Technical consultation · Newsletter",
+        title: "Demo, trial, consultation, and newsletter",
         lead: (
             <>
-                Request a product demo, a 15-day XGEN free trial, or a PoC and
-                technical consultation. Pick an inquiry type, and we will get back
-                to you{" "}
+                Request a product demo, a 15-day XGEN free trial, a PoC and
+                technical consultation, or a newsletter subscription. Pick an
+                inquiry type, and we will get back to you{" "}
                 <br className="hidden md:inline" />
                 within one to two business days.
             </>
@@ -143,7 +143,7 @@ export function ContactPageContent({ locale }: { locale: Locale }) {
                             <p className="text-[16px] font-semibold tracking-tight text-[#7dd3fc]">
                                 {t.eyebrow}
                             </p>
-                            <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-5xl">
+                            <h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
                                 {t.title}
                             </h1>
                             <p className="mt-5 max-w-lg text-lg leading-relaxed text-white/65">
