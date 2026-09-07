@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { ArrowUp, Check, ChevronDown, Flame } from "lucide-react";
 import { SubscriberProfileForm } from "@/components/subscriber-profile-form";
 import { cn } from "@/lib/cn";
@@ -92,6 +93,33 @@ export function SubscribeCta() {
     if (!mounted || !kind || gated) return null;
 
     const cfg = CONFIG[kind];
+
+    // 뉴스레터 구독도 상담과 같은 상세 폼에서 받는다. 목록 페이지에는 같은
+    // DemoForm이 본문에 있고, 개별 호에서는 이 CTA가 해당 유형을 미리 선택한
+    // 상담 페이지로 연결한다.
+    if (kind === "newsletter") {
+        return (
+            <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2">
+                <button
+                    type="button"
+                    aria-label="맨 위로"
+                    onClick={() =>
+                        window.scrollTo({ top: 0, behavior: "smooth" })
+                    }
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-line)] bg-white text-[var(--color-ink-muted)] shadow-[0_8px_24px_-10px_rgba(20,40,80,0.4)] transition hover:text-[var(--color-ink)]"
+                >
+                    <ArrowUp className="h-5 w-5" />
+                </button>
+                <Link
+                    href="/contact?type=newsletter"
+                    className="inline-flex items-center gap-2 rounded-full border border-[#c7d9ff] bg-white px-5 py-3 text-[15px] font-bold text-[#2461d8] shadow-[0_8px_24px_-8px_rgba(20,40,80,0.4)] transition hover:border-[#2f7bff]"
+                >
+                    <Flame className="h-4 w-4 text-[#ff7a3d]" />
+                    {cfg.pill}
+                </Link>
+            </div>
+        );
+    }
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();

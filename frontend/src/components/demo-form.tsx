@@ -32,6 +32,7 @@ const COPY = {
             "XGEN 15일 무료 체험 신청",
             "PoC · 기술 상담",
             "도입 · 견적 문의",
+            "뉴스레터 구독하기",
             "기타",
         ],
         inquiry: "상담 내용",
@@ -76,6 +77,11 @@ const COPY = {
             ],
             [
                 "접수하신 내용을 담당자가 검토합니다",
+                "뉴스레터 구독 정보를 등록합니다",
+                "다음 호부터 입력하신 이메일로 보내드립니다",
+            ],
+            [
+                "접수하신 내용을 담당자가 검토합니다",
                 "영업일 1–2일 내 이메일 또는 전화로 연락드립니다",
                 "문의 내용에 맞는 담당자가 상세히 안내드립니다",
             ],
@@ -111,6 +117,7 @@ const COPY = {
             "XGEN 15-day free trial",
             "PoC / Tech consultation",
             "Pricing / Rollout inquiry",
+            "Newsletter subscription",
             "Other",
         ],
         inquiry: "Consultation details",
@@ -153,6 +160,11 @@ const COPY = {
                 "A researcher reviews your request",
                 "We reach out by email or phone within 1–2 business days",
                 "We propose a rollout approach and quote that fit your requirements",
+            ],
+            [
+                "We review your subscription request",
+                "We register your newsletter subscription details",
+                "Future issues will be sent to the email address you provided",
             ],
             [
                 "A researcher reviews your request",
@@ -212,12 +224,13 @@ const REQUIRED_TEXT = [
     "inquiry",
 ] as const;
 
-/** ?type= 딥링크 → 문의 유형 프리셋(옵션 인덱스). demo·trial·poc·pricing */
+/** ?type= 딥링크 → 문의 유형 프리셋(옵션 인덱스). */
 const TYPE_PARAM_TO_INDEX: Record<string, number> = {
     demo: 0,
     trial: 1,
     poc: 2,
     pricing: 3,
+    newsletter: 4,
 };
 
 const REQUIRED_CONSENTS = [
@@ -225,7 +238,7 @@ const REQUIRED_CONSENTS = [
     "agreePrivacyCollect",
 ] as const;
 
-export function DemoForm() {
+export function DemoForm({ initialType }: { initialType?: keyof typeof TYPE_PARAM_TO_INDEX }) {
     const { locale } = useI18n();
     const c = COPY[locale === "en" ? "en" : "ko"];
 
@@ -253,7 +266,9 @@ export function DemoForm() {
     // 진입 소스에 따라 문의 유형 프리셋: ?type= 우선, 없으면 레퍼러로 추론
     //  · ?type=demo|trial|poc|pricing  · 레퍼러가 /xgen-trial → 무료 체험
     useEffect(() => {
-        let idx: number | undefined;
+        let idx: number | undefined = initialType
+            ? TYPE_PARAM_TO_INDEX[initialType]
+            : undefined;
         const t = new URLSearchParams(window.location.search).get("type");
         if (t && t in TYPE_PARAM_TO_INDEX) {
             idx = TYPE_PARAM_TO_INDEX[t];
@@ -276,8 +291,7 @@ export function DemoForm() {
                 inquiryType: c.inquiryTypeOptions[idx as number],
             }));
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [c.inquiryTypeOptions, initialType]);
 
     const validate = (): boolean => {
         const e: Record<string, string> = {};
@@ -402,7 +416,12 @@ export function DemoForm() {
                         <button
                             type="button"
                             onClick={() => {
-                                setFields(EMPTY);
+                                setFields({
+                                    ...EMPTY,
+                                    inquiryType: initialType
+                                        ? c.inquiryTypeOptions[TYPE_PARAM_TO_INDEX[initialType]]
+                                        : "",
+                                });
                                 setErrors({});
                                 setStatus("idle");
                             }}
